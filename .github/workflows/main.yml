@@ -2,8 +2,8 @@ name: Scrape Bangchak Oil Price Data
 
 on:
   schedule:
-    # 10:15 UTC และ 12:15 UTC = ตรงกับ 17:15 น. และ 19:15 น. (เวลาไทย)
-    - cron: '15 10,12 * * *'
+    # 10:10 UTC และ 12:10 UTC = ตรงกับ 17:10 น. และ 19:10 น. (เวลาไทย)
+    - cron: '10 10,12 * * *'
   workflow_dispatch:
 
 permissions:
