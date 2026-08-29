@@ -22,6 +22,10 @@ HEADERS = {
 def get_from_bangchak_api():
   url = "https://oil-price.bangchak.co.th/ApiOilPrice2/th"
   res = requests.get(url, headers=HEADERS, timeout=10)
+  logger.info(f"Bangchak API status={res.status_code}, len={len(res.text)}")
+  if res.status_code != 200:
+    logger.warning(f"Bangchak API non-200 body preview: {res.text[:300]!r}")
+    return []
   if res.status_code == 200:
     data = res.json()
     items = []
@@ -45,6 +49,8 @@ def get_from_bangchak_api():
       ).strip()
       if name and today and re.search(r"\d", today):
         oil_data.append({"name": name, "today": today, "tomorrow": tomorrow})
+    if not oil_data:
+      logger.warning(f"Bangchak API returned 200 but parsed 0 items. Raw items count: {len(items)}. Sample: {items[:2]}")
     return oil_data
   return []
 
@@ -52,6 +58,10 @@ def get_from_bangchak_api():
 def get_from_open_api():
   url = "https://api.chnwt.dev/thai-oil-api/latest"
   res = requests.get(url, headers=HEADERS, timeout=10)
+  logger.info(f"Open API status={res.status_code}, len={len(res.text)}")
+  if res.status_code != 200:
+    logger.warning(f"Open API non-200 body preview: {res.text[:300]!r}")
+    return []
   if res.status_code == 200:
     data = res.json()
     bcp_data = (
@@ -69,6 +79,8 @@ def get_from_open_api():
         )
         if name and today and re.search(r"\d", today):
           oil_data.append({"name": name, "today": today, "tomorrow": tomorrow})
+    if not oil_data:
+      logger.warning(f"Open API returned 200 but parsed 0 items. Raw stations: {list(bcp_data.keys())[:5]}")
     return oil_data
   return []
 
@@ -79,9 +91,11 @@ def get_from_playwright():
   with sync_playwright() as p:
     browser = p.chromium.launch(headless=True)
     page = browser.new_page(user_agent=HEADERS["User-Agent"])
-    page.goto(url, wait_until="domcontentloaded", timeout=60000)
+    response = page.goto(url, wait_until="domcontentloaded", timeout=60000)
+    logger.info(f"Playwright page status={response.status if response else 'None'}")
     page.wait_for_timeout(4000)
     html_content = page.content()
+    logger.info(f"Playwright page content length={len(html_content)}")
     browser.close()
 
   soup = BeautifulSoup(html_content, "html.parser")
@@ -110,7 +124,7 @@ def scrape_oil_price():
           f"Successfully fetched via Bangchak API ({len(oil_data)} items)"
       )
   except Exception as e:
-    logger.warning(f"Bangchak API failed: {e}")
+    logger.warning(f"Bangchak API failed: {e}", exc_info=True)
 
   # ช่องทางที่ 2: Public Thai Oil Open API (สำรอง)
   if not oil_data:
@@ -122,7 +136,7 @@ def scrape_oil_price():
             f"Successfully fetched via Open API ({len(oil_data)} items)"
         )
     except Exception as e:
-      logger.warning(f"Open API fallback failed: {e}")
+      logger.warning(f"Open API fallback failed: {e}", exc_info=True)
 
   # ช่องทางที่ 3: Playwright Web Scraping (สำรองสุดท้าย)
   if not oil_data:
@@ -134,7 +148,7 @@ def scrape_oil_price():
             f"Successfully fetched via Playwright ({len(oil_data)} items)"
         )
     except Exception as e:
-      logger.error(f"Playwright fallback failed: {e}")
+      logger.error(f"Playwright fallback failed: {e}", exc_info=True)
 
   if not oil_data:
     raise RuntimeError("ไม่พบรายการราคาน้ำมันจากทุกช่องทาง")
