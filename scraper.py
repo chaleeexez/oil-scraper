@@ -28,12 +28,18 @@ def get_from_bangchak_api():
     return []
   if res.status_code == 200:
     data = res.json()
-    logger.info(f"Bangchak API raw preview: {json.dumps(data, ensure_ascii=False)[:1500]}")
     items = []
     if isinstance(data, list):
       for entry in data:
-        if isinstance(entry, dict) and "oil" in entry:
-          items.extend(entry.get("oil", []))
+        if isinstance(entry, dict) and "OilList" in entry:
+          oil_list_raw = entry.get("OilList")
+          if isinstance(oil_list_raw, str):
+            try:
+              items.extend(json.loads(oil_list_raw))
+            except json.JSONDecodeError:
+              logger.warning("Failed to parse OilList JSON string")
+          elif isinstance(oil_list_raw, list):
+            items.extend(oil_list_raw)
     elif isinstance(data, dict):
       items = (
           data.get("oil", [])
@@ -65,9 +71,8 @@ def get_from_open_api():
     return []
   if res.status_code == 200:
     data = res.json()
-    logger.info(f"Open API raw preview: {json.dumps(data, ensure_ascii=False)[:1500]}")
     bcp_data = (
-        data.get("response", {}).get("stations", {}).get("bangchak", {})
+        data.get("response", {}).get("stations", {}).get("bcp", {})
     )
     oil_data = []
     for key, val in bcp_data.items():
@@ -102,7 +107,7 @@ def get_from_playwright():
 
   soup = BeautifulSoup(html_content, "html.parser")
   rows = soup.find_all("tr")
-  logger.info(f"Playwright found {len(rows)} <tr> rows. HTML preview: {html_content[:1200]}")
+  logger.info(f"Playwright found {len(rows)} <tr> rows")
   for row in rows:
     cols = [td.get_text(strip=True) for td in row.find_all(["td", "th"])]
     if len(cols) >= 2:
