@@ -28,6 +28,7 @@ def get_from_bangchak_api():
     return []
   if res.status_code == 200:
     data = res.json()
+    logger.info(f"Bangchak API raw preview: {json.dumps(data, ensure_ascii=False)[:1500]}")
     items = []
     if isinstance(data, list):
       for entry in data:
@@ -64,6 +65,7 @@ def get_from_open_api():
     return []
   if res.status_code == 200:
     data = res.json()
+    logger.info(f"Open API raw preview: {json.dumps(data, ensure_ascii=False)[:1500]}")
     bcp_data = (
         data.get("response", {}).get("stations", {}).get("bangchak", {})
     )
@@ -100,6 +102,7 @@ def get_from_playwright():
 
   soup = BeautifulSoup(html_content, "html.parser")
   rows = soup.find_all("tr")
+  logger.info(f"Playwright found {len(rows)} <tr> rows. HTML preview: {html_content[:1200]}")
   for row in rows:
     cols = [td.get_text(strip=True) for td in row.find_all(["td", "th"])]
     if len(cols) >= 2:
