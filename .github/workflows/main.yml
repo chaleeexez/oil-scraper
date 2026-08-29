@@ -2,12 +2,10 @@ name: Scrape Bangchak Oil Price Data
 
 on:
   schedule:
-    # รันวันละ 2 รอบ: 07:05 น. และ 17:30 น. (เวลาไทย)
-    # 00:05 UTC = 07:05 น. ไทย / 10:30 UTC = 17:30 น. ไทย
-    - cron: '05 0,10 * * *'
+    # 10:15 UTC และ 12:15 UTC = ตรงกับ 17:15 น. และ 19:15 น. (เวลาไทย)
+    - cron: '15 10,12 * * *'
   workflow_dispatch:
 
-# เพิ่มสิทธิ์ให้ Bot สามารถ Write/Push ข้อมูลกลับลง Repo ได้
 permissions:
   contents: write
 
